@@ -22,3 +22,6 @@ A smart, full-stack inventory management system designed to reduce household foo
    ```bash
    git clone [https://github.com/yourusername/zero-waste-kitchen.git](https://github.com/yourusername/zero-waste-kitchen.git)
    cd zero-waste-kitchen
+
+
+<img width="1378" height="877" alt="image" src="https://github.com/user-attachments/assets/6833632a-1c26-4bdd-ac7b-d81b67e14439" />
