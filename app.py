@@ -14,6 +14,21 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev_key_123")
 DB_PATH = os.environ.get("DATABASE_URL", "kitchen.db")
 SPOON_API_KEY = os.environ.get("SPOONACULAR_API_KEY")
 
+def init_db():
+    conn = sqlite3.connect('database.db')
+    # This creates the table if it doesn't exist yet
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS ingredients (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            expiry_date TEXT NOT NULL
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+# Call this before starting the app
+init_db()
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
