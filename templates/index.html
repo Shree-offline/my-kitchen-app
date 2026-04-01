@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zero-Waste Kitchen Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .item-card:hover { transform: translateY(-2px); transition: all 0.2s; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen pb-12">
+
+    <nav class="bg-green-600 text-white p-4 shadow-lg mb-8">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <span>🥗</span> Zero-Waste Kitchen
+            </h1>
+            <span class="text-sm opacity-80">Track. Cook. Save.</span>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-4">
+        
+        {% if expiring_soon %}
+        <div class="bg-orange-100 border-l-4 border-orange-500 p-4 mb-6 rounded-r-lg shadow-sm">
+            <div class="flex items-center">
+                <span class="text-orange-700 font-bold mr-2">⚠️ High Priority:</span>
+                <p class="text-orange-700">Use these within 48h: <strong>{{ expiring_soon|join(', ') }}</strong></p>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <div class="md:col-span-1">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h2 class="text-lg font-semibold mb-4 text-slate-800">Add New Item</h2>
+                    <form action="/add" method="POST" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Ingredient Name</label>
+                            <input type="text" name="name" placeholder="e.g. Greek Yogurt" 
+                                   class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 outline-none" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Expiry Date</label>
+                            <input type="date" name="expiry" 
+                                   class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 outline-none" required>
+                        </div>
+                        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition">
+                            Add to Fridge
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="md:col-span-2 space-y-6">
+                
+                <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 rounded-xl shadow-md text-white">
+                    <h3 class="text-xl font-bold mb-2">Stuck for Ideas?</h3>
+                    <p class="text-purple-100 mb-4 text-sm">We'll find a recipe based on what you have right now.</p>
+                    <button id="surpriseBtn" onclick="getRecipe()" class="bg-white text-purple-700 font-bold py-2 px-6 rounded-full hover:bg-purple-50 transition shadow-lg">
+                        ✨ Surprise Me
+                    </button>
+                    <div id="recipeResult" class="mt-4 hidden p-3 bg-white/10 rounded-lg text-sm border border-white/20">
+                        </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100">
+                        <h2 class="text-lg font-semibold text-slate-800">Your Inventory</h2>
+                    </div>
+                    <ul class="divide-y divide-slate-100">
+                        {% for item in items %}
+                        <li class="px-6 py-4 flex justify-between items-center hover:bg-slate-50 transition">
+                            <div>
+                                <p class="font-semibold text-slate-700">{{ item['name'] }}</p>
+                                <p class="text-xs text-slate-400">Expires: {{ item['expiry_date'] }}</p>
+                            </div>
+                            <a href="/delete/{{ item['id'] }}" class="text-slate-300 hover:text-red-500 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </a>
+                        </li>
+                        {% endfor %}
+                        {% if not items %}
+                        <li class="px-6 py-10 text-center text-slate-400">Your fridge is empty. Time to go shopping!</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function getRecipe() {
+            const btn = document.getElementById('surpriseBtn');
+            const resultDiv = document.getElementById('recipeResult');
+            
+            btn.innerText = "Searching...";
+            btn.disabled = true;
+
+            try {
+                // Fetching from the Flask route we created
+                const response = await fetch('/surprise_api'); 
+                const data = await response.json();
+
+                resultDiv.classList.remove('hidden');
+                if (data.success) {
+                    resultDiv.innerHTML = `<strong>Try this:</strong> ${data.recipe} <br> 
+                                           <a href="${data.link}" target="_blank" class="underline text-white/80 hover:text-white">View Recipe &rarr;</a>`;
+                } else {
+                    resultDiv.innerHTML = `❌ ${data.message}`;
+                }
+            } catch (error) {
+                resultDiv.classList.remove('hidden');
+                resultDiv.innerText = "Error connecting to the chef! Check your API key.";
+            } finally {
+                btn.innerText = "✨ Surprise Me";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
